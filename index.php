@@ -132,13 +132,16 @@ if(!isset($_SERVER['DOCUMENT_ROOT'])) {
     $_SERVER['DOCUMENT_ROOT'] = substr($path, 0, 0-strlen($_SERVER['PHP_SELF']));
 }
 $_SERVER['DOCUMENT_ROOT'] = fix_directory_separator($_SERVER['DOCUMENT_ROOT']);
-if (@get_magic_quotes_gpc()) {
-    function stripslashes_deep($value){
-        return is_array($value)? array_map('stripslashes_deep', $value):$value;
-    }
-    $_POST = array_map('stripslashes_deep', $_POST);
-    $_GET = array_map('stripslashes_deep', $_GET);
-    $_COOKIE = array_map('stripslashes_deep', $_COOKIE);
+if (function_exists("get_magic_quotes_gpc"))
+{
+	if (@get_magic_quotes_gpc()) {
+		function stripslashes_deep($value){
+			return is_array($value)? array_map('stripslashes_deep', $value):$value;
+		}
+		$_POST = array_map('stripslashes_deep', $_POST);
+		$_GET = array_map('stripslashes_deep', $_GET);
+		$_COOKIE = array_map('stripslashes_deep', $_COOKIE);
+	}
 }
 // Register Globals (its an old script..)
 $blockKeys = array('_SERVER','_SESSION','_GET','_POST','_COOKIE');
@@ -1769,11 +1772,11 @@ function get_encoding($text){
     $first2 = mb_substr($text, 0, 2);
     $first3 = mb_substr($text, 0, 3);
     $first4 = mb_substr($text, 0, 4);
-    if ($first3 == UTF8_BOM) return 'UTF-8'; // WITH BOM
-    elseif ($first4 == UTF32_BIG_ENDIAN_BOM) return 'UTF-32BE';
-    elseif ($first4 == UTF32_LITTLE_ENDIAN_BOM) return 'UTF-32LE';
-    elseif ($first2 == UTF16_BIG_ENDIAN_BOM) return 'UTF-16BE';
-    elseif ($first2 == UTF16_LITTLE_ENDIAN_BOM) return 'UTF-16LE';
+    if ($first3 == chr(0xEF).chr(0xBB).chr(0xBF)) return 'UTF-8'; // WITH BOM
+    elseif ($first4 == chr(0x00).chr(0x00).chr(0xFE).chr(0xFF)) return 'UTF-32BE';
+    elseif ($first4 == chr(0xFF).chr(0xFE).chr(0x00).chr(0x00)) return 'UTF-32LE';
+    elseif ($first2 == chr(0xFE).chr(0xFF)) return 'UTF-16BE';
+    elseif ($first2 == chr(0xFF).chr(0xFE)) return 'UTF-16LE';
     elseif (mb_detect_encoding($text, 'UTF-8', true) == true) return 'UTF-8'; // WITHOUT BOM
     elseif (mb_detect_encoding($text, 'ISO-8859-1', true) == true) return 'ISO-8859-1';
     else return mb_detect_encoding($text);
